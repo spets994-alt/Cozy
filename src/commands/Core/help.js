@@ -4,7 +4,7 @@ import {
     ButtonBuilder,
     ButtonStyle,
 } from "discord.js";
-import { InteractionHelper } from '../../utils/interactionHelper.js';
+import { InteractionHelper } from "../../utils/interactionHelper.js";
 import { createEmbed } from "../../utils/embeds.js";
 import {
     createSelectMenu,
@@ -19,6 +19,9 @@ const __dirname = path.dirname(__filename);
 const CATEGORY_SELECT_ID = "help-category-select";
 const ALL_COMMANDS_ID = "help-all-commands";
 const BUG_REPORT_BUTTON_ID = "help-bug-report";
+const REPORT_MEMBER_BUTTON_ID = "help-report-member";
+const REPORT_STAFF_BUTTON_ID = "help-report-staff";
+
 const HELP_MENU_TIMEOUT_MS = 5 * 60 * 1000;
 
 const CATEGORY_ICONS = {
@@ -44,13 +47,14 @@ const CATEGORY_ICONS = {
 
 function formatCategoryName(rawCategory) {
     return rawCategory
-        .replace(/_/g, '')
-        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/_/g, "")
+        .replace(/([a-z])([A-Z])/g, "$1 $2")
         .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 export async function createInitialHelpMenu(client) {
     const commandsPath = path.join(__dirname, "../../commands");
+
     const categoryDirs = (
         await fs.readdir(commandsPath, { withFileTypes: true })
     )
@@ -64,9 +68,11 @@ export async function createInitialHelpMenu(client) {
             description: "Browse every available command in a single list",
             value: ALL_COMMANDS_ID,
         },
+
         ...categoryDirs.map((category) => {
             const categoryName = formatCategoryName(category);
             const icon = CATEGORY_ICONS[categoryName] || "🔍";
+
             return {
                 label: `${icon} ${categoryName}`,
                 description: `View commands in the ${categoryName} category`,
@@ -76,45 +82,92 @@ export async function createInitialHelpMenu(client) {
     ];
 
     const botName = client?.user?.username || "Bot";
+
     const embed = createEmbed({
         title: `📖 ${botName} Help`,
-        description: 'Set up your server, pick what to enable, then browse commands below.',
-        color: 'primary',
-        thumbnail: client.user?.displayAvatarURL?.({ size: 1024 }),
+
+        description:
+            "Set up your server, pick what to enable, then browse commands below.",
+
+        color: "primary",
+
+        thumbnail: client.user?.displayAvatarURL?.({
+            size: 1024,
+        }),
+
         fields: [
             {
-                name: '🚀 Getting Started',
+                name: "🚀 Getting Started",
                 value: [
-                    '**1. Launch setup** — Run `/configwizard` to configure prefix, mod role, and logs.',
-                    '**2. Enable systems** — Use `/commands dashboard` to turn categories on or off.',                    '**3. Browse commands** — Use the menu below to view categories and commands.',
-                ].join('\n'),
+                    "**1. Launch setup** — Run `/configwizard` to configure prefix, mod role, and logs.",
+                    "**2. Enable systems** — Use `/commands dashboard` to turn categories on or off.",
+                    "**3. Browse commands** — Use the menu below to view categories and commands.",
+                ].join("\n"),
                 inline: false,
             },
+
             {
-                name: 'ℹ️ How It Works',
+                name: "ℹ️ How It Works",
                 value: [
-                    '• Dashboard commands manage each feature visually',
-                    '• Settings are saved per server',
-                    '• Slash commands and prefixes both work once enabled',
-                ].join('\n'),
+                    "• Dashboard commands manage each feature visually",
+                    "• Settings are saved per server",
+                    "• Slash commands and prefixes both work once enabled",
+                ].join("\n"),
                 inline: false,
             },
+
             {
-                name: '\u200B',
+                name: "🚨 Harassment & Staff Abuse",
+                value: [
+                    "If you are being **harassed, threatened, or targeted by another member**, report it to the server staff.",
+                    "",
+                    "If you see a **staff member abusing their permissions**, report it too.",
+                    "",
+                    "📸 **Keep evidence** such as screenshots, message links, or other relevant information.",
+                    "⚠️ **Do not retaliate** or start an argument. Let the server's moderation team handle it.",
+                    "🔒 Reports should be handled privately and respectfully.",
+                ].join("\n"),
+                inline: false,
+            },
+
+            {
+                name: "🛡️ Staff Conduct",
+                value: [
+                    "Staff members are expected to use their permissions responsibly.",
+                    "Abusing moderation powers, unfair punishment, harassment, or targeting members should be reported.",
+                    "",
+                    "Use the buttons below to submit a report.",
+                ].join("\n"),
+                inline: false,
+            },
+
+            {
+                name: "\u200B",
                 value: `-# ${botName} is [open source](https://youtu.be/1jCZX8s3bJE?si=NPOYx-vxVE1I5vJK)`,
                 inline: false,
             },
         ],
     });
 
-    embed.setFooter({ 
-        text: "Made with ❤️" 
+    embed.setFooter({
+        text: "Made with ❤️",
     });
+
     embed.setTimestamp();
 
     const bugReportButton = new ButtonBuilder()
         .setCustomId(BUG_REPORT_BUTTON_ID)
         .setLabel("Report Bug")
+        .setStyle(ButtonStyle.Danger);
+
+    const reportMemberButton = new ButtonBuilder()
+        .setCustomId(REPORT_MEMBER_BUTTON_ID)
+        .setLabel("Report Member")
+        .setStyle(ButtonStyle.Secondary);
+
+    const reportStaffButton = new ButtonBuilder()
+        .setCustomId(REPORT_STAFF_BUTTON_ID)
+        .setLabel("Report Staff")
         .setStyle(ButtonStyle.Danger);
 
     const supportButton = new ButtonBuilder()
@@ -128,10 +181,12 @@ export async function createInitialHelpMenu(client) {
         options,
     );
 
-    const buttonRow = new ActionRowBuilder().addComponents([
+    const buttonRow = new ActionRowBuilder().addComponents(
         bugReportButton,
+        reportMemberButton,
+        reportStaffButton,
         supportButton,
-    ]);
+    );
 
     return {
         embeds: [embed],
@@ -141,16 +196,16 @@ export async function createInitialHelpMenu(client) {
 
 export default {
     slashOnly: true,
+
     data: new SlashCommandBuilder()
         .setName("help")
         .setDescription("Displays the help menu with all available commands"),
 
     async execute(interaction, guildConfig, client) {
-        
-        const { MessageFlags } = await import('discord.js');
         await InteractionHelper.safeDefer(interaction);
-        
-        const { embeds, components } = await createInitialHelpMenu(client);
+
+        const { embeds, components } =
+            await createInitialHelpMenu(client);
 
         await InteractionHelper.safeEditReply(interaction, {
             embeds,
@@ -165,7 +220,8 @@ export default {
 
                 const closedEmbed = createEmbed({
                     title: "Help menu closed",
-                    description: "Help menu has been closed, use /help again.",
+                    description:
+                        "Help menu has been closed, use /help again.",
                     color: "secondary",
                 });
 
@@ -174,7 +230,10 @@ export default {
                     components: [],
                 });
             } catch (error) {
-                logger.debug('Help menu close edit failed (interaction may have expired):', error?.message);
+                console.debug(
+                    "Help menu close edit failed:",
+                    error?.message,
+                );
             }
         }, HELP_MENU_TIMEOUT_MS);
     },
