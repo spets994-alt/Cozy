@@ -80,7 +80,7 @@ export default {
                     "Victim too poor",
                     ErrorTypes.VALIDATION,
                     `${victimUser.username} is too poor. They need at least $500 cash to be worth robbing.`,
-                    { victimWallet: victimData.wallet, required: 500 }
+                    { victimWallet: victimData.wallet, required: 100 }
                 );
             }
 
