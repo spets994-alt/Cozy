@@ -93,11 +93,12 @@ class TitanBot extends Client {
       // Say hi when the bot joins a new server
       this.on('guildCreate', async (guild) => {
         try {
-          const channel = guild.channels.cache.find(
-            channel =>
+          const channel = guild.channels.cache
+            .filter(channel =>
               channel.isTextBased() &&
               channel.permissionsFor(guild.members.me)?.has('SendMessages')
-          );
+            )
+            .first();
 
           if (!channel) return;
 
