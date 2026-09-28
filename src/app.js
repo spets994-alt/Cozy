@@ -1,4 +1,4 @@
-﻿import 'dotenv/config';
+import 'dotenv/config';
 import { Client, Collection, GatewayIntentBits } from 'discord.js';
 import { REST } from '@discordjs/rest';
 import express from 'express';
@@ -61,16 +61,16 @@ class TitanBot extends Client {
       const dbStatus = this.db.getStatus();
       if (dbStatus.isDegraded) {
         logger.warn('');
-        logger.warn('╔═══════════════════════════════════════════════════════╗');
-        logger.warn('║ ⚠️  DATABASE RUNNING IN DEGRADED MODE                 ║');
-        logger.warn('║                                                       ║');
-        logger.warn('║ Connection: In-Memory Storage (PostgreSQL unavailable)║');
-        logger.warn('║ Data Persistence: DISABLED - data lost on restart    ║');
-        logger.warn('║ Action Required: Fix PostgreSQL and restart bot      ║');
-        logger.warn('╚═══════════════════════════════════════════════════════╝');
+        logger.warn('âââââââââââââââââââââââââââââââââââââââââââââââââââââââââ');
+        logger.warn('â â ï¸  DATABASE RUNNING IN DEGRADED MODE                 â');
+        logger.warn('â                                                       â');
+        logger.warn('â Connection: In-Memory Storage (PostgreSQL unavailable)â');
+        logger.warn('â Data Persistence: DISABLED - data lost on restart    â');
+        logger.warn('â Action Required: Fix PostgreSQL and restart bot      â');
+        logger.warn('âââââââââââââââââââââââââââââââââââââââââââââââââââââââââ');
         logger.warn('');
       } else {
-        startupLog(`✅ Database Status: ${dbStatus.connectionType} (fully operational)`);
+        startupLog(`â Database Status: ${dbStatus.connectionType} (fully operational)`);
       }
       
       startupLog('Starting web server...');
@@ -89,6 +89,23 @@ class TitanBot extends Client {
       startupLog('Logging into Discord...');
       await this.login(this.config.bot.token);
       startupLog('Discord login successful');
+
+      // Say hi when the bot joins a new server
+      this.on('guildCreate', async (guild) => {
+        try {
+          const channel = guild.channels.cache.find(
+            channel =>
+              channel.isTextBased() &&
+              channel.permissionsFor(guild.members.me)?.has('SendMessages')
+          );
+
+          if (!channel) return;
+
+          await channel.send('ð Hi! Thanks for adding me!');
+        } catch (error) {
+          logger.warn(`Could not send welcome message in ${guild.name}:`, error.message);
+        }
+      });
       
       startupLog('Registering slash commands globally...');
       await this.registerCommands();
@@ -99,7 +116,7 @@ class TitanBot extends Client {
         : 'Connected (persistent data enabled)';
       const handlerSummary = `${this.buttons.size} buttons, ${this.selectMenus.size} menus, ${this.modals.size} modals`;
       startupLog(
-        `ONLINE ✅ | ${this.commands.size} commands loaded | ${handlerSummary} | Database: ${databaseMode}`
+        `ONLINE â | ${this.commands.size} commands loaded | ${handlerSummary} | Database: ${databaseMode}`
       );
       
       this.setupCronJobs();
@@ -215,7 +232,7 @@ class TitanBot extends Client {
       const server = app.listen(port, host, () => {
         hasStartedListening = true;
         this.webServer = server;
-        startupLog(`✅ Web Server running on ${host}:${port}`);
+        startupLog(`â Web Server running on ${host}:${port}`);
         startupLog(`Health endpoint: http://${host}:${port}/health`);
         startupLog(`Ready endpoint: http://${host}:${port}/ready`);
       });
@@ -236,7 +253,7 @@ class TitanBot extends Client {
           return;
         }
 
-        logger.error(`❌ Web server error on port ${port} (${errorCode}): ${errorMessage}`);
+        logger.error(`â Web server error on port ${port} (${errorCode}): ${errorMessage}`);
 
         if (!hasStartedListening) {
           process.exit(1);
@@ -307,16 +324,16 @@ class TitanBot extends Client {
 
         if (typeof loaderFn === 'function') {
           await loaderFn(this);
-          startupLog(`✅ Loaded ${handler.path}`);
+          startupLog(`â Loaded ${handler.path}`);
         } else {
           throw new Error(`Invalid loader export from ${handler.path}`);
         }
       } catch (error) {
         if (handler.required) {
-          logger.error(`❌ Failed to load required handler ${handler.path}:`, error.message);
+          logger.error(`â Failed to load required handler ${handler.path}:`, error.message);
           throw error;
         } else if (error.code !== 'MODULE_NOT_FOUND') {
-          logger.warn(`⚠️  Failed to load optional handler ${handler.path}:`, error.message);
+          logger.warn(`â ï¸  Failed to load optional handler ${handler.path}:`, error.message);
         }
       }
     }
@@ -333,23 +350,23 @@ class TitanBot extends Client {
   async shutdown(reason = 'UNKNOWN') {
     shutdownLog(`Bot is shutting down (${reason})...`);
     logger.info(`\n${'='.repeat(60)}`);
-    logger.info(`🛑 Graceful Shutdown Initiated (${reason})`);
+    logger.info(`ð Graceful Shutdown Initiated (${reason})`);
     logger.info(`${'='.repeat(60)}`);
 
     try {
       
       logger.info('Stopping cron jobs...');
       cron.getTasks().forEach(task => task.stop());
-      logger.info('✅ Cron jobs stopped');
+      logger.info('â Cron jobs stopped');
 
       logger.info('Stopping music players...');
       await shutdownMusic(this);
-      logger.info('✅ Music players stopped');
+      logger.info('â Music players stopped');
 
       if (this.webServer) {
         logger.info('Closing web server...');
         await new Promise((resolve) => this.webServer.close(resolve));
-        logger.info('✅ Web server closed');
+        logger.info('â Web server closed');
       }
 
       // Close database connection
@@ -359,7 +376,7 @@ class TitanBot extends Client {
         try {
           if (this.db.db.pool) {
             await this.db.db.pool.end();
-            logger.info('✅ Database connection closed');
+            logger.info('â Database connection closed');
           }
         } catch (error) {
           logger.warn('Error closing database pool:', error.message);
@@ -370,14 +387,14 @@ class TitanBot extends Client {
       if (this.isReady()) {
         try {
           this.destroy();
-          logger.info('✅ Discord client destroyed');
+          logger.info('â Discord client destroyed');
         } catch (error) {
 
           logger.warn('Discord client destroy warning (non-critical):', error.message);
         }
       }
 
-      logger.info('✅ Graceful shutdown complete');
+      logger.info('â Graceful shutdown complete');
   shutdownLog('Bot stopped successfully.');
       process.exit(0);
     } catch (error) {
@@ -428,4 +445,3 @@ try {
   process.exit(1);
 }
 
-export default TitanBot;
